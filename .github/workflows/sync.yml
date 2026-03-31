@@ -1,0 +1,56 @@
+name: Sync dbt Fusion versions
+
+on:
+  schedule:
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Fetch all existing tags
+        run: git fetch --tags
+
+      - name: Sync versions from dbt-fusion CHANGELOG
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Parse version headers from dbt-labs/dbt-fusion CHANGELOG.md
+          # Format: "## 2.0.0-preview.164 - 2026-03-26" or "## 2.0.0-beta.24 - 2025-06-18"
+          VERSIONS=$(curl -sf \
+            "https://raw.githubusercontent.com/dbt-labs/dbt-fusion/main/CHANGELOG.md" \
+            | grep -oP '(?<=## )\d+\.\d+\.\d+-[a-z]+\.\d+(?= -)' \
+            | sort -uV \
+            | sed 's/^/v/')
+
+          if [ -z "$VERSIONS" ]; then
+            echo "No versions found, exiting"
+            exit 1
+          fi
+
+          echo "Versions found: $(echo "$VERSIONS" | tr '\n' ' ')"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          CREATED=0
+          for VERSION in $VERSIONS; do
+            if git ls-remote --tags origin "refs/tags/$VERSION" | grep -q .; then
+              echo "  $VERSION — already exists"
+            else
+              echo "  $VERSION — creating tag"
+              git tag "$VERSION"
+              git push origin "$VERSION"
+              CREATED=$((CREATED + 1))
+            fi
+          done
+
+          echo "Done — $CREATED new tag(s) created"
