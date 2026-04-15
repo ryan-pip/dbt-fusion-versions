@@ -5,14 +5,45 @@ on:
 
 permissions:
   contents: read
+  pull-requests: write
 
 jobs:
   validate:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      - name: Check version parsing
+      - name: Fetch existing tags
+        run: git fetch --tags
+
+      - name: Check parsing and compare to existing tags
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
           VERSIONS=$(.github/scripts/parse-versions.sh)
-          echo "OK — $(echo "$VERSIONS" | wc -l | tr -d ' ') version(s) parsed"
+          echo "Parsed $(echo "$VERSIONS" | wc -l | tr -d ' ') version(s)"
+
+          EXISTING=$(git tag | sort)
+
+          # Versions in CHANGELOG not yet in this repo (would be newly created)
+          NEW=$(comm -23 <(echo "$VERSIONS" | sort) <(echo "$EXISTING") | sort -V)
+
+          if [ -z "$NEW" ]; then
+            TOTAL=$(echo "$VERSIONS" | wc -l | tr -d ' ')
+            gh pr comment "$PR_NUMBER" \
+              --body "✅ **Exact match** — all ${TOTAL} parsed version(s) already exist as tags. No new tags would be created by the sync action." \
+              --repo "$GITHUB_REPOSITORY"
+            gh pr merge "$PR_NUMBER" --auto --merge \
+              --repo "$GITHUB_REPOSITORY"
+          else
+            NEW_COUNT=$(echo "$NEW" | wc -l | tr -d ' ')
+            gh pr comment "$PR_NUMBER" \
+              --body "🏷️ **${NEW_COUNT} new tag(s) would be created by the sync action:**
+\`\`\`
+$NEW
+\`\`\`" \
+              --repo "$GITHUB_REPOSITORY"
+          fi
