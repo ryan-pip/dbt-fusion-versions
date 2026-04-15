@@ -40,10 +40,13 @@ jobs:
               --repo "$GITHUB_REPOSITORY"
           else
             NEW_COUNT=$(echo "$NEW" | wc -l | tr -d ' ')
+            {
+              echo "🏷️ **${NEW_COUNT} new tag(s) would be created by the sync action:**"
+              printf '```\n'
+              echo "$NEW"
+              printf '```\n'
+            } > /tmp/pr-comment.txt
             gh pr comment "$PR_NUMBER" \
-              --body "🏷️ **${NEW_COUNT} new tag(s) would be created by the sync action:**
-\`\`\`
-$NEW
-\`\`\`" \
+              --body-file /tmp/pr-comment.txt \
               --repo "$GITHUB_REPOSITORY"
           fi
