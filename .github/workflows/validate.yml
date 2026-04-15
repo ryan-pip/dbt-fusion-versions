@@ -36,7 +36,7 @@ jobs:
             gh pr comment "$PR_NUMBER" \
               --body "✅ **Exact match** — all ${TOTAL} parsed version(s) already exist as tags. No new tags would be created by the sync action." \
               --repo "$GITHUB_REPOSITORY"
-            gh pr merge "$PR_NUMBER" --auto --merge \
+            gh pr merge "$PR_NUMBER" --auto --rebase \
               --repo "$GITHUB_REPOSITORY"
           else
             NEW_COUNT=$(echo "$NEW" | wc -l | tr -d ' ')
