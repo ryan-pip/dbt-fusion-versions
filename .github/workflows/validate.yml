@@ -1,0 +1,15 @@
+name: Validate version parsing
+
+on:
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check version parsing
+        run: |
+          VERSIONS=$(.github/scripts/parse-versions.sh)
+          echo "OK — $(echo "$VERSIONS" | wc -l | tr -d ' ') version(s) parsed"

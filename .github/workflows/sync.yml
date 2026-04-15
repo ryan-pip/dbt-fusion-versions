@@ -23,19 +23,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # Parse version headers from dbt-labs/dbt-fusion CHANGELOG.md
-          # Format: "## 2.0.0-preview.171" (version on its own line)
-          VERSIONS=$(curl -sf \
-            "https://raw.githubusercontent.com/dbt-labs/dbt-fusion/main/CHANGELOG.md" \
-            | grep -oP '(?<=## )\d+\.\d+\.\d+-[a-z]+\.\d+' \
-            | sort -uV \
-            | sed 's/^/v/')
-
-          if [ -z "$VERSIONS" ]; then
-            echo "No versions found, exiting"
-            exit 1
-          fi
-
+          VERSIONS=$(.github/scripts/parse-versions.sh)
           echo "Versions found: $(echo "$VERSIONS" | tr '\n' ' ')"
 
           git config user.name "github-actions[bot]"
