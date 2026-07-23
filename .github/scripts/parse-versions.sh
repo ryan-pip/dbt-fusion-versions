@@ -12,6 +12,12 @@
 # distinct tag it points at so this repo mirrors each channel tip as a git tag
 # for aqua to enumerate.
 #
+# The pre-release channels below are excluded: a git tag carries no channel
+# metadata, so aqua would surface a bleeding-edge dev/nightly/canary build as
+# if it were a normal release. Everything else (latest, stable, extended,
+# fallback, the st-* scheduled trains, ...) is a promoted/stable pointer and is
+# kept. To exclude another channel, add its key to EXCLUDE_CHANNELS.
+#
 # The manifest URL can be overridden via DBT_FUSION_VERSIONS_URL (used by tests).
 # Exits 1 if no versions are found (likely a manifest URL or format change).
 
@@ -19,8 +25,11 @@ set -euo pipefail
 
 VERSIONS_URL="${DBT_FUSION_VERSIONS_URL:-https://public.cdn.getdbt.com/fs/versions.json}"
 
+EXCLUDE_CHANNELS='["dev","nightly","canary"]'
+
 VERSIONS=$(curl -sf "$VERSIONS_URL" \
-  | jq -r '.. | objects | .tag? // empty' \
+  | jq -r --argjson exclude "$EXCLUDE_CHANNELS" \
+      'to_entries[] | select(.key | IN($exclude[]) | not) | .value | objects | .tag? // empty' \
   | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+' \
   | sort -uV)
 
