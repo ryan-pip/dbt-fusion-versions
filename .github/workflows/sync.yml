@@ -19,7 +19,7 @@ jobs:
       - name: Fetch all existing tags
         run: git fetch --tags
 
-      - name: Sync versions from dbt-fusion CHANGELOG
+      - name: Sync versions from dbt-fusion versions.json
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
