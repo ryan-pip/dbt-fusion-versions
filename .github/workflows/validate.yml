@@ -28,7 +28,7 @@ jobs:
 
           EXISTING=$(git tag | sort)
 
-          # Versions in CHANGELOG not yet in this repo (would be newly created)
+          # Versions in versions.json not yet in this repo (would be newly created)
           NEW=$(comm -23 <(echo "$VERSIONS" | sort) <(echo "$EXISTING") | sort -V)
 
           if [ -z "$NEW" ]; then
